@@ -11,21 +11,9 @@ from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, Text, ForeignKey
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
-# Import your forms from the forms.py
+# Import your forms from forms.py
 from forms import CreatePostForm, RegisterForm, LoginForm, CommentForm
 
-'''
-Make sure the required packages are installed: 
-Open the Terminal in PyCharm (bottom left). 
-
-On Windows type:
-python -m pip install -r requirements.txt
-
-On MacOS type:
-pip3 install -r requirements.txt
-
-This will install the packages from the requirements.txt for this project.
-'''
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("FLASK_KEY")
@@ -36,13 +24,12 @@ Bootstrap5(app)
 # CREATE DATABASE
 class Base(DeclarativeBase):
     pass
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///posts.db")
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
 
 
-# TODO: Configure Flask-Login
+# Configure Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -68,7 +55,7 @@ class BlogPost(db.Model):
     comments: Mapped[list["Comment"]] = relationship(back_populates="parent_post")
 
 
-# TODO: Create a User table for all your registered users.
+# Create a User table for all your registered users.
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -96,25 +83,8 @@ class Comment(db.Model):
 with app.app_context():
     db.create_all()
 
-# CODE TO GET THE AVATAR FROM GRAVATAR WITHOUT THE FLASK-GRAVATAR EXTENSION
-# GRAVATAR_API_KEY = "5596:gk-1ZnQUnhrQNPyyPQmx8n4kjgLuVWXzAB4MJiW7papjCJh56pPePprpacQGamS1"
-# GRAVATAR_BASE_URL = "https://api.gravatar.com/v3"
-# GRAVATAR_AVATAR_URL = "https://www.gravatar.com/avatar"
-#
-# def get_gravatar_hash(email):
-#     email_encoded = str(email).lower().encode('utf-8')
-#     email_hash = hashlib.sha256(email_encoded).hexdigest()
-#     return email_hash
-#
-# def get_gravatar_image(email):
-#     email_hashed = get_gravatar_hash(email)
-#     size = "100"
-#     query_params = urlencode({'d': default, 's': str(size)})
-#     gravatar_url = f"{GRAVATAR_AVATAR_URL}/{email_hashed}?{query_params}"
-#     return gravatar_url
 
-
-# FLASK-GRAVATAR EXTENSION TO GET THE AVATARS
+# Flask-Gravatar extension
 gravatar = Gravatar(app,
                     size=100,
                     rating='g',
@@ -124,7 +94,7 @@ gravatar = Gravatar(app,
                     use_ssl=False,
                     base_url=None)
 
-# TODO: Use Werkzeug to hash the user's password when creating a new user.
+# Use Werkzeug to hash the user's password when creating a new user.
 @app.route('/register', methods=["GET", "POST"])
 def register():
     register_form = RegisterForm()
@@ -152,7 +122,7 @@ def register():
     return render_template("register.html", form=register_form, current_user=current_user)
 
 
-# TODO: Retrieve a user from the database based on their email. 
+# Retrieve a user from the database based on their email.
 @app.route('/login', methods=["GET", "POST"])
 def login():
     login_form = LoginForm()
@@ -194,18 +164,11 @@ def get_all_posts():
     return render_template("index.html", all_posts=posts, current_user=current_user)
 
 
-# TODO: Allow logged-in users to comment on posts
+# Allow logged-in users to comment on posts
 @app.route("/post/<int:post_id>", methods=["GET", "POST"])
 def show_post(post_id):
     comment_form = CommentForm()
     requested_post = db.get_or_404(BlogPost, post_id)
-    # CODE TO PASS A DICTIONARY OF AVATARS TO THE post.html
-    # commenter_images = {}
-    # for comment in requested_post.comments:
-    #     image_url = get_gravatar_image(comment.author.email)
-    #     response = requests.get(image_url)
-    #     if response.status_code == 200:
-    #         commenter_images[comment.author.email] = get_gravatar_image(comment.author.email)
     if comment_form.validate_on_submit():
         if not current_user.is_authenticated:
             flash("Please log in if you want to add a comment.")
@@ -224,7 +187,6 @@ def show_post(post_id):
     return render_template("post.html", form=comment_form, post=requested_post, current_user=current_user)
 
 
-# TODO: Use a decorator so only an admin user can create a new post
 @app.route("/new-post", methods=["GET", "POST"])
 @admin_only
 def add_new_post():
@@ -244,7 +206,6 @@ def add_new_post():
     return render_template("make-post.html", form=post_form, current_user=current_user)
 
 
-# TODO: Use a decorator so only an admin user can edit a post
 @app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
 @admin_only
 def edit_post(post_id):
@@ -267,7 +228,6 @@ def edit_post(post_id):
     return render_template("make-post.html", form=edit_form, is_edit=True, current_user=current_user)
 
 
-# TODO: Use a decorator so only an admin user can delete a post
 @app.route("/delete/<int:post_id>")
 @admin_only
 def delete_post(post_id):
